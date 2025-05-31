@@ -2,23 +2,46 @@ name: Format
 
 on:
   push:
-    branches: [main, dev]
+    branches: [dev, main]
   pull_request:
-    branches: [main, dev]
+    branches: [dev, main]
+  workflow_call:
   workflow_dispatch:
 
 jobs:
-  prettier:
-    name: Prettier
+  changes:
+    name: Identify changes
     runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.dedupe.outputs.should_skip }}
+    permissions:
+      actions: read
+      contents: write
     steps:
       - name: Check out repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
-      - name: Setup node environment
-        uses: lojoja/action-setup-node-env@main
+      - name: Dedupe
+        id: dedupe
+        uses: lojoja/action-dedupe@main
         with:
-          node-version: 22
+          github_token: ${{ github.token }}
+          paths_ignore: |
+            - "*.lock"
+            - .actrc
+            - .gitignore
+            - LICENSE
+            - pnpm-lock.yaml
 
-      - name: Run prettier
-        run: pnpm prettier --check .
+  result:
+    name: Format result
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - prettier
+    steps:
+      - name: Format failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
+      - name: Format passed
+        run: exit 0
