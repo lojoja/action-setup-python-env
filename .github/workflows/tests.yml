@@ -1,0 +1,87 @@
+name: Tests
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  changes:
+    name: Identify changes
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.dedupe.outputs.should_skip }}
+      named: ${{ steps.dedupe.outputs.named }}
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Dedupe
+        id: dedupe
+        uses: lojoja/action-dedupe@main
+        with:
+          github_token: ${{ github.token }}
+          paths: |
+            - .github/workflows/tests.yml
+            - action.yml
+          paths_named: |
+            poetry:
+              paths:
+                - tests/poetry/*
+            uv:
+              paths:
+                - tests/uv/*
+
+  test-setup-python-env-poetry:
+    name: Test setup-python-env poetry
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.should_skip == 'false' || ! fromJSON(needs.changes.outputs.named).poetry.should_skip
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Run setup-python-env action
+        id: action
+        uses: ./
+        with:
+          working_directory: tests/poetry
+          package_manager: poetry
+          python_version: "3.10"
+
+  test-setup-python-env-uv:
+    name: Test setup-python-env uv
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.should_skip == 'false' || ! fromJSON(needs.changes.outputs.named).uv.should_skip
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Run setup-python-env action
+        id: action
+        uses: ./
+        with:
+          working_directory: tests/uv
+          package_manager: uv
+          python_version: "3.10"
+
+  result:
+    name: Tests result
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - test-setup-python-env-poetry
+      - test-setup-python-env-uv
+    steps:
+      - name: Tests failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
+      - name: Tests passed
+        run: exit 0

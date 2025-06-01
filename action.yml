@@ -1,22 +1,78 @@
 name: Setup Python Environment
-description: Configure python environment with project dependencies
+description: Configure python environment with python, poetry/uv, caching, and project dependencies.
+
 inputs:
-  python-version:
-    description: The version to use in SemVer range syntax. See https://github.com/actions/setup-python/blob/main/README.md
-outputs: {}
+  cache:
+    description: Whether to cache project dependencies.
+    required: false
+    default: "true"
+  package_manager:
+    description: The package manager to use ("poetry" or "uv").
+    required: false
+    default: uv
+  python_version:
+    description: The python version to use in SemVer range syntax.
+    required: false
+    default: "3.13"
+  working_directory:
+    description: The directory to execute commands in.
+    required: false
+    default: "."
+
+outputs:
+  python_version:
+    description: The installed python version.
+    value: ${{ steps.python.outputs.python-version }}
+
 runs:
-  using: "composite"
+  using: composite
   steps:
-    - name: Install poetry
-      run: pipx install poetry
+    - name: Abort if package manager is invalid
+      if: ! contains(fromJSON('["poetry", "uv"]'), inputs.package_manager)
+      run: exit 1
       shell: bash
 
     - name: Install python
+      id: python
       uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55
       with:
-        python-version: ${{ inputs.python-version }}
-        cache: poetry
+        python-version: ${{ inputs.python_version }}
 
-    - name: Install project with dependencies
-      run: poetry install
+    - name: Install package manager
+      run: pipx install ${{ inputs.package_manager }}
       shell: bash
+      env:
+        PIPX_DEFAULT_PYTHON: ${{ steps.python.outputs.python-path }}
+
+    - name: Set cache key environment vars
+      if: ${{ inputs.cache == 'true' }}
+      run: |
+        if [[ ${{ inputs.package_manager }} == 'poetry' ]]
+        then
+          echo "CACHE_PATH=$(poetry config --list | grep -oP '(?<=cache-dir = ")(.+)(?=")')" >> $GITHUB_ENV
+        else
+          echo "CACHE_PATH=$(uv cache dir)" >> $GITHUB_ENV
+        fi
+
+        base_cache_key="${{ runner.os }}-python-${{ steps.python.outputs.python-version }}-${{ inputs.package_manager }}-"
+        echo "BASE_CACHE_KEY=$base_cache_key" >> $GITHUB_ENV
+        echo "CACHE_KEY=${base_cache_key}${{ hashFiles(format('{0}/{1}.lock', inputs.working_directory, inputs.package_manager)) }}" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Setup dependency cache
+      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+      with:
+        path: ${{ env.CACHE_PATH }}
+        key: ${{ env.CACHE_KEY }}
+        restore-keys: ${{ env.BASE_CACHE_KEY }}
+
+    - name: Install dependencies
+      run: |
+        if [[ ${{ inputs.package_manager }} == 'poetry' ]]
+        then
+          poetry install
+        else
+          uv sync
+        fi
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
