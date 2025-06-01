@@ -1,6 +1,10 @@
 !*
+*.egg-info/
 *.sublime-workspace
 ._*
+.coverage
 .DS_Store
+.pytest_cache/
+.venv/
+__pycache__/
 node_modules/
-tests/*/.venv/
