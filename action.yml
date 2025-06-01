@@ -28,7 +28,7 @@ runs:
   using: composite
   steps:
     - name: Abort if package manager is invalid
-      if: ! contains(fromJSON('["poetry", "uv"]'), inputs.package_manager)
+      if: ${{ ! contains(fromJSON('["poetry", "uv"]'), inputs.package_manager) }}
       run: exit 1
       shell: bash
 
