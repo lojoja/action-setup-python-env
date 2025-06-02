@@ -33,10 +33,10 @@ jobs:
           paths_named: |
             poetry:
               paths:
-                - tests/poetry/*
+                - tests/poetry/**
             uv:
               paths:
-                - tests/uv/*
+                - tests/uv/**
 
   test-setup-python-env-poetry:
     name: Test setup-python-env poetry
