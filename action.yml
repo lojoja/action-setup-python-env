@@ -41,8 +41,6 @@ runs:
     - name: Install package manager
       run: pipx install ${{ inputs.package_manager }}
       shell: bash
-      env:
-        PIPX_DEFAULT_PYTHON: ${{ steps.python.outputs.python-path }}
 
     - name: Set cache key environment vars
       if: ${{ inputs.cache == 'true' }}
