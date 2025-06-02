@@ -29,7 +29,6 @@ jobs:
           paths_ignore: |
             - "*.lock"
             - .actrc
-            - .gitignore
             - LICENSE
             - pnpm-lock.yaml
 
