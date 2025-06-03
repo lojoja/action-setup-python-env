@@ -47,7 +47,7 @@ runs:
       run: |
         if [[ ${{ inputs.package_manager }} == 'poetry' ]]
         then
-          echo "CACHE_PATH=$(poetry config --list | grep -oP '(?<=cache-dir = ")(.+)(?=")')" >> $GITHUB_ENV
+          echo "CACHE_PATH=$(poetry config cache-dir)" >> $GITHUB_ENV
         else
           echo "CACHE_PATH=$(uv cache dir)" >> $GITHUB_ENV
         fi
