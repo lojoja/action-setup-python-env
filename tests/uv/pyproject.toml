@@ -1,9 +1,9 @@
 [project]
 name = "setup-python-env-uv"
 version = "0.0.0"
-requires-python = ">=3.10,<4"
+requires-python = ">=3.14,<4"
 dependencies = [
-  "platformdirs (==4.3.7)",
+  "platformdirs (==4.11.0)",
 ]
 
 [tool.uv]

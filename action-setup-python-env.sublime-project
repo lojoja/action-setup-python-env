@@ -7,6 +7,18 @@
   ],
   "settings": {
     "LSP": {
+      "LSP-pylsp": {
+        "enabled": false
+      },
+      "LSP-pyright": {
+        "enabled": false
+      },
+      "LSP-ruff": {
+        "enabled": true
+      },
+      "LSP-ty": {
+        "enabled": true
+      },
       "LSP-yaml": {
         "settings": {
           "yaml.schemas": {
